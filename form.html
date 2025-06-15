@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>病患資料輸入</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    header { display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; padding: 1em; }
+    .form-section { margin: 2em auto; width: 400px; }
+    input, select { width: 100%; margin: 0.5em 0; padding: 0.5em; }
+    footer { margin-top: 2em; font-size: 0.8em; text-align: center; color: gray; }
+    button.menu { margin-left: 1em; }
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong>ICU 系統</strong> | <span id="now"></span></div>
+    <div>
+      醫師：<span id="doc"></span>
+      <button class="menu" onclick="window.location.href='dashboard.html'">查詢病患資料</button>
+      <button class="menu" onclick="logout()">登出</button>
+    </div>
+  </header>
+  <h2>新增病患資料</h2>
+  <div class="form-section">
+    <input placeholder="姓名" required />
+    <input placeholder="病歷號" required />
+    <input type="number" placeholder="年齡" required />
+    <select required><option value="">選擇性別</option><option value="男">男</option><option value="女">女</option></select>
+    <input placeholder="床號" required />
+    <input placeholder="診斷" required />
+    <input placeholder="主治醫師" required />
+    <label>入院時間</label>
+    <input type="datetime-local" required />
+    <label>出院時間</label>
+    <input type="datetime-local" required />
+    <input type="number" placeholder="APACHE II Score" required />
+    <button onclick="alert('已儲存')">送出</button>
+  </div>
+  <footer>ICU Management System - All Rights Reserved</footer>
+  <script>
+    document.getElementById("doc").innerText = sessionStorage.getItem("doctor") || "未登入";
+    document.getElementById("now").innerText = new Date().toLocaleString();
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>

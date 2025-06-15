@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>ICU 登入系統</title>
+  <style>
+    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+    input, button { margin: 0.5em; padding: 0.5em; width: 240px; }
+    .error { color: red; margin-top: 0.5em; }
+    footer { position: fixed; bottom: 10px; text-align: center; width: 100%; font-size: 0.8em; color: gray; }
+  </style>
+</head>
+<body>
+  <h1>登入 ICU 系統</h1>
+  <form id="loginForm">
+    <input id="username" type="text" placeholder="醫師帳號 (username)" required autofocus />
+    <input id="password" type="password" placeholder="密碼 (至少8字)" required minlength="8" />
+    <button type="submit">登入</button>
+    <p><a href="#">忘記密碼？</a></p>
+    <p class="error" id="errorMsg"></p>
+  </form>
+  <footer>ICU Management System - All Rights Reserved</footer>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      if (password.length < 8) {
+        document.getElementById("errorMsg").textContent = "密碼需至少8個字元";
+        return;
+      }
+
+      try {
+        const res = await fetch("https://icu-api.onrender.com/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const result = await res.json();
+
+        if (res.ok && result.success) {
+          sessionStorage.setItem("username", result.username);
+          sessionStorage.setItem("doctor_name", result.name);
+          window.location.href = "dashboard.html";
+        } else {
+          document.getElementById("errorMsg").textContent = result.message || "登入失敗，請檢查帳號密碼";
+        }
+      } catch (err) {
+        document.getElementById("errorMsg").textContent = "無法連線至伺服器";
+      }
+    });
+  </script>
+</body>
+</html>
