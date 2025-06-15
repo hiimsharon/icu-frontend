@@ -38,7 +38,7 @@
     document.getElementById("doctor").innerText = doctor;
     document.getElementById("now").innerText = new Date().toLocaleString();
 
-    fetch("https://your-api-url.onrender.com/api/patients")
+    fetch("https://icu-api-56bh.onrender.com/api/patients")
       .then(res => res.json()).then(data => {
         const body = document.querySelector("#patientTable tbody");
         let labels = [], scores = [];
