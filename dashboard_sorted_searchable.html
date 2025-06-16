@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<link href="style.css" rel="stylesheet"/>
+<meta charset="utf-8"/>
+<title>ICU 病患查詢</title>
+<style>
+    body { font-family: sans-serif; padding: 0; margin: 0; }
+    header { display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; padding: 1em; }
+    table { margin: 2em auto; border-collapse: collapse; width: 95%; }
+    th, td { border: 1px solid #ccc; padding: 0.5em; }
+    canvas { display: block; margin: 2em auto; }
+    footer { margin-top: 2em; font-size: 0.8em; text-align: center; color: gray; }
+    button.menu { margin-left: 1em; }
+  </style>
+</head>
+<body>
+<header>
+<div><strong>ICU 系統</strong> | <span id="now"></span></div>
+<div>
+      醫師：<span id="doctor"></span>
+<button class="menu" onclick="window.location.href='form.html'">新增資料</button>
+<button class="menu" onclick="logout()">登出</button>
+</div>
+</header>
+
+<div style="text-align: center; margin-top: 1em;">
+<input id="searchInput" placeholder="🔍 搜尋病患姓名..." style="padding: 0.5em; width: 200px;" type="text"/>
+<select id="sortSelect" style="padding: 0.5em;">
+<option value="none">排序方式</option>
+<option value="apacheAsc">依 APACHE 分數（低 → 高）</option>
+<option value="apacheDesc">依 APACHE 分數（高 → 低）</option>
+</select>
+</div>
+<table id="patientTable">
+<thead>
+<tr><th>姓名</th><th>病歷號</th><th>年齡</th><th>性別</th><th>床號</th><th>診斷</th><th>APACHE II</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+<canvas height="200" id="chart" width="600"></canvas>
+<footer>ICU Management System - All Rights Reserved</footer>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const doctor = sessionStorage.getItem("doctor");
+if (!doctor) window.location.href = "login.html";
+document.getElementById("doctor").innerText = doctor;
+document.getElementById("now").innerText = new Date().toLocaleString();
+
+let originalData = [];
+
+function renderTable(data) {
+  const body = document.querySelector("#patientTable tbody");
+  body.innerHTML = "";
+  let labels = [], scores = [];
+
+  data.forEach(p => {
+    if (p.attending_doctor_id === doctor) {
+      body.innerHTML += `<tr><td>${p.name}</td><td>${p.patientID}</td><td>${p.age}</td><td>${p.gender}</td><td>${p.bedID}</td><td>${p.diagnosis}</td><td>${p.apache_score}</td></tr>`;
+      labels.push(p.name);
+      scores.push(p.apache_score);
+    }
+  });
+
+  new Chart(document.getElementById("chart"), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: "APACHE II", data: scores }] }
+  });
+}
+
+fetch("https://icu-api-56bh.onrender.com/api/patients")
+  .then(res => res.json())
+  .then(data => {
+    originalData = data;
+    renderTable(data);
+  });
+
+document.getElementById("searchInput").addEventListener("input", function () {
+  const keyword = this.value.toLowerCase();
+  const filtered = originalData.filter(p => p.name.toLowerCase().includes(keyword));
+  renderTable(filtered);
+});
+
+document.getElementById("sortSelect").addEventListener("change", function () {
+  let sorted = [...originalData];
+  if (this.value === "apacheAsc") {
+    sorted.sort((a, b) => a.apache_score - b.apache_score);
+  } else if (this.value === "apacheDesc") {
+    sorted.sort((a, b) => b.apache_score - a.apache_score);
+  }
+  renderTable(sorted);
+});
+
+function logout() {
+  sessionStorage.clear();
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>
