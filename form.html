@@ -75,7 +75,7 @@
     <label for="apache">APACHE II Score</label>
     <input id="apache" type="number" placeholder="APACHE II Score" required />
 
-    <button onclick="alert('已儲存')">送出</button>
+    <button id="submitBtn">送出</button>
   </div>
 
   <footer>ICU Management System - © Sha Huang</footer>
@@ -99,6 +99,43 @@
       sessionStorage.clear();
       window.location.href = "login.html";
     }
+
+    // ⬇️ 送出病患資料邏輯
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const payload = {
+        patient_id: document.getElementById("record").value,
+        name: document.getElementById("name").value,
+        age: parseInt(document.getElementById("age").value),
+        gender: document.getElementById("gender").value,
+        bed_id: parseInt(document.getElementById("bed").value),
+        diagnosis: document.getElementById("diagnosis").value,
+        attending_doctor_id: sessionStorage.getItem("username"),
+        admission_date: new Date(document.getElementById("admit").value),
+        discharge_date: new Date(document.getElementById("discharge").value),
+        apache_score: parseInt(document.getElementById("apache").value)
+      };
+
+      try {
+        const res = await fetch("https://icu-api-56bh.onrender.com/api/patients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        console.log("✅ API 回傳結果：", result);
+
+        if (res.ok) {
+          alert("✅ 病患資料已成功新增！");
+          window.location.href = "dashboard.html";
+        } else {
+          alert("❌ 新增失敗：" + (result.message || "未知錯誤"));
+        }
+      } catch (err) {
+        console.error("❌ 發送失敗", err);
+        alert("⚠ 無法連線至伺服器，請稍後再試");
+      }
+    });
   </script>
 </body>
 </html>
