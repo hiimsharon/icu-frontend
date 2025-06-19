@@ -72,6 +72,8 @@
 
         // ✅ 比對病患資料中的 attending_doctor_id 是否等於登入的帳號
         data.forEach(p => {
+	  console.log("👁 正在比對：病患所屬醫師 =", p.attending_doctor_id, "登入帳號 =", username);
+
           if (p.attending_doctor_id === username){
             body.innerHTML += `<tr><td>${p.name}</td><td>${p.patientID}</td><td>${p.age}</td><td>${p.gender}</td><td>${p.bedID}</td><td>${p.diagnosis}</td><td>${p.apache_score}</td></tr>`;
             labels.push(p.name);
