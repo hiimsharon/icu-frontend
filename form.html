@@ -122,11 +122,14 @@
           body: JSON.stringify(payload)
         });
 
+      const end = performance.now(); // 🕒 結束時間
+      const duration = Math.round(end - start); // 🧮 計算執行時間（毫秒）
+        
         const result = await res.json();
         console.log("✅ API 回傳結果：", result);
 
         if (res.ok) {
-          alert("✅ 病患資料已成功新增！");
+          alert("✅ 病患資料已成功新增！\n處理時間：${duration} 毫秒`);
           window.location.href = "dashboard.html";
         } else {
           alert("❌ 新增失敗：" + (result.message || "未知錯誤"));
