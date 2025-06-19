@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>ICU 管理者後台</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    h2 { margin-top: 2em; color: #0066cc; }
+    table { margin-top: 1em; }
+    .menu { margin-left: 1em; }
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong>ICU 系統（管理者）</strong> | <span id="now"></span></div>
+    <div>
+      管理者：<span id="admin"></span>
+      <button class="menu" onclick="window.location.href='dashboard.html'">返回查詢</button>
+      <button class="menu" onclick="logout()">登出</button>
+    </div>
+  </header>
+
+  <h2>1️⃣ 占床率查詢</h2>
+  <p id="occupancyRate">載入中...</p>
+
+  <h2>2️⃣ APACHE II 區間病患統計</h2>
+  <table id="apacheTable">
+    <thead><tr><th>區間</th><th>姓名</th><th>診斷</th><th>住院天數</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>3️⃣ 醫師統計分析</h2>
+  <table id="doctorTable">
+    <thead><tr><th>醫師 ID</th><th>病患人數</th><th>平均住院天數</th><th>平均 APACHE II</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <footer>ICU Management System - 管理者後台</footer>
+
+  <script>
+    // 只允許管理者進入
+    if (sessionStorage.getItem("role") !== "admin") {
+      alert("權限不足，將跳轉回登入頁面");
+      window.location.href = "login.html";
+    }
+
+    document.getElementById("admin").innerText = sessionStorage.getItem("name") || "未登入";
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    document.getElementById("now").textContent = new Date().toLocaleString();
+    setInterval(() => {
+      document.getElementById("now").textContent = new Date().toLocaleString();
+    }, 1000);
+
+    fetch("https://icu-api-56bh.onrender.com/api/patients")
+      .then(res => res.json())
+      .then(data => {
+        // 1️⃣ 占床率
+        const totalBeds = 100;
+        const usedBeds = new Set(data.map(p => p.bed_id)).size;
+        const rate = ((usedBeds / totalBeds) * 100).toFixed(1);
+        document.getElementById("occupancyRate").textContent = `目前占床率：${rate}% (${usedBeds}/${totalBeds})`;
+
+        // 2️⃣ APACHE II 分類
+        const apacheBody = document.querySelector("#apacheTable tbody");
+        data.forEach(p => {
+          const stayDays = Math.ceil((new Date(p.discharge_date) - new Date(p.admission_date)) / (1000 * 60 * 60 * 24));
+          const zone = p.apache_score < 15 ? "<15" : p.apache_score <= 34 ? "15-34" : ">34";
+          apacheBody.innerHTML += `<tr><td>${zone}</td><td>${p.name}</td><td>${p.diagnosis}</td><td>${stayDays} 天</td></tr>`;
+        });
+
+        // 3️⃣ 醫師統計
+        const doctorMap = {};
+        data.forEach(p => {
+          const doc = p.attending_doctor_id;
+          const days = Math.ceil((new Date(p.discharge_date) - new Date(p.admission_date)) / (1000 * 60 * 60 * 24));
+          if (!doctorMap[doc]) doctorMap[doc] = [];
+          doctorMap[doc].push({ score: p.apache_score, days });
+        });
+
+        const doctorBody = document.querySelector("#doctorTable tbody");
+        for (const [doc, records] of Object.entries(doctorMap)) {
+          const count = records.length;
+          const avgStay = (records.reduce((sum, r) => sum + r.days, 0) / count).toFixed(1);
+          const avgScore = (records.reduce((sum, r) => sum + r.score, 0) / count).toFixed(1);
+          doctorBody.innerHTML += `<tr><td>${doc}</td><td>${count}</td><td>${avgStay} 天</td><td>${avgScore}</td></tr>`;
+        }
+      })
+      .catch(err => {
+        console.error("❌ 資料錯誤：", err);
+        document.getElementById("occupancyRate").textContent = "⚠ 無法載入病患資料";
+      });
+  </script>
+</body>
+</html>
