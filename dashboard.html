@@ -36,15 +36,37 @@
     const username = sessionStorage.getItem("username"); // 例如 D001 → 拿來比對病患
     const doctorName = sessionStorage.getItem("name");  // 例如 黃醫師 → 顯示在畫面右上角
 
+    // ✅ 加入這些 log 觀察 sessionStorage 是否正確
+    console.log("🚀 Dashboard 載入中...");
+    console.log("🧾 登入帳號 username =", username);
+    console.log("🧾 醫師中文名 doctorName =", doctorName);
+
+    // 如果未登入，轉回 login 頁面
     if (!username) window.location.href = "login.html";
 
-    document.getElementById("doctor").innerText = doctorName;
+    // ✅ 顯示醫師姓名
+    document.getElementById("doctor").innerText = doctorName || "未登入";
     document.getElementById("now").innerText = new Date().toLocaleString();
+
+    // ✅ 顯示目前時間（每秒更新）
+    function updateTime() {
+     const now = new Date();
+     document.getElementById("now").textContent = now.toLocaleString('zh-Hant-TW', {
+       year: 'numeric', month: '2-digit', day: '2-digit',
+       hour: '2-digit', minute: '2-digit', second: '2-digit'
+     });
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
 
 
     fetch("https://icu-api-56bh.onrender.com/api/patients")
       .then(res => res.json())
       .then(data => {
+
+        console.log("📦 病患資料筆數：", data.length);
+        console.log("📋 病患資料內容：", data);
+
         const body = document.querySelector("#patientTable tbody");
         let labels = [], scores = [];
 
@@ -73,10 +95,14 @@
             }] 
 	  }
         });
-      });
+      })
 
+        
 	.catch(err => {
-		console.error("❌ 錯誤：無法取得病患資料", err);
+		console.error("❌ 無法取得病患資料", err);
+	document.querySelector("#patientTable tbody").innerHTML =
+        	`<tr><td colspan="7" style="text-align:center;color:red;">⚠ 無法取得病患資料</td></tr>`;
+
 	});
 
     function logout() {

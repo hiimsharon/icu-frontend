@@ -85,6 +85,10 @@
         const result = await res.json();
 
         if (res.ok && result.success) {
+	  console.log("✅ 登入成功！");
+  	  console.log("📦 result.username =", result.username);
+  	  console.log("📦 result.name =", result.name);
+
           sessionStorage.setItem("username", result.username); // D001
           sessionStorage.setItem("name", result.name); // 👈 醫師本名，用來查資料
           window.location.href = "dashboard.html";
