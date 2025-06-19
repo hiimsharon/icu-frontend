@@ -102,6 +102,8 @@
 
     // ⬇️ 送出病患資料邏輯
     document.getElementById("submitBtn").addEventListener("click", async () => {
+      const start = performance.now(); // ✅ 加入開始時間
+      
       const payload = {
         patient_id: document.getElementById("record").value,
         name: document.getElementById("name").value,
