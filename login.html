@@ -85,8 +85,8 @@
         const result = await res.json();
 
         if (res.ok && result.success) {
-          sessionStorage.setItem("username", result.username);
-          sessionStorage.setItem("doctor_name", result.name);
+          sessionStorage.setItem("username", result.username); // D001
+          sessionStorage.setItem("name", result.name); // 👈 醫師本名，用來查資料
           window.location.href = "dashboard.html";
         } else {
           document.getElementById("errorMsg").textContent = result.message || "登入失敗，請檢查帳號密碼";

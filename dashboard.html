@@ -33,22 +33,28 @@
   <footer>ICU Management System - All Rights Reserved</footer>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const doctor = sessionStorage.getItem("doctor");
-    if (!doctor) window.location.href = "login.html";
-    document.getElementById("doctor").innerText = doctor;
+    const username = sessionStorage.getItem("username");
+    const doctorName = sessionStorage.getItem("name");
+
+    if (!username) window.location.href = "login.html";
+
+    document.getElementById("doctor").innerText = doctorName;
     document.getElementById("now").innerText = new Date().toLocaleString();
+
 
     fetch("https://icu-api-56bh.onrender.com/api/patients")
       .then(res => res.json()).then(data => {
         const body = document.querySelector("#patientTable tbody");
         let labels = [], scores = [];
+
         data.forEach(p => {
-          if (p.attending_doctor_id === doctor) {
+          if (p.attending_doctor_id === doctorName){
             body.innerHTML += `<tr><td>${p.name}</td><td>${p.patientID}</td><td>${p.age}</td><td>${p.gender}</td><td>${p.bedID}</td><td>${p.diagnosis}</td><td>${p.apache_score}</td></tr>`;
             labels.push(p.name);
             scores.push(p.apache_score);
           }
         });
+
         new Chart(document.getElementById("chart"), {
           type: 'bar',
           data: { labels, datasets: [{ label: "APACHE II", data: scores }] }
