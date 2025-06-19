@@ -87,18 +87,6 @@
 	if (labels.length === 0) {
 		body.innerHTML = `<tr><td colspan="7" style="text-align:center;">尚無您負責的病患資料</td></tr>`;
 	}
-
-	// ✅ 畫圖表
-        new Chart(document.getElementById("chart"), {
-          type: 'bar',
-          data: { 
-            labels, 
-	    datasets: [{ 
-		label: "APACHE II", 
-		data: scores 
-            }] 
-	  }
-        });
       })
 
         
