@@ -75,7 +75,7 @@
 	  console.log("👁 正在比對：病患所屬醫師 =", p.attending_doctor_id, "登入帳號 =", username);
 
           if (p.attending_doctor_id === username){
-            body.innerHTML += `<tr><td>${p.name}</td><td>${p.patientID}</td><td>${p.age}</td><td>${p.gender}</td><td>${p.bedID}</td><td>${p.diagnosis}</td><td>${p.apache_score}</td></tr>`;
+            body.innerHTML += `<tr><td>${p.name}</td><td>${p.patient_id}</td><td>${p.age}</td><td>${p.gender}</td><td>${p.bed_id}</td><td>${p.diagnosis}</td><td>${p.apache_score}</td></tr>`;
             labels.push(p.name);
             scores.push(p.apache_score);
           }
