@@ -41,106 +41,211 @@
 
   <h2>新增病患資料</h2>
   <div class="form-section">
-    <label for="name">姓名</label>
-    <input id="name" placeholder="姓名" required />
+    <label for="name">姓名</label>   
+    <input id="name" maxlength="50" />
+    <div id="error-name" class="error-msg">請輸入姓名</div>
 
     <label for="record">病歷號</label>
-    <input id="record" placeholder="病歷號" required />
+    <input id="record" maxlength="8" pattern="\d{8}" />
+    <div id="error-record" class="error-msg">請輸入 8 碼病歷號</div>
 
     <label for="age">年齡</label>
-    <input id="age" type="number" placeholder="年齡" required />
+    <input id="age" type="number" min="0" max="130" />
+    <div id="error-age" class="error-msg">年齡需在 0~130</div>
 
     <label for="gender">性別</label>
-    <select id="gender" required>
-      <option value="">選擇性別</option>
-      <option value="Male">Male</option>
-      <option value="Female">Female</option>
-    </select>
+    <div class="gender-group">
+      <div id="btn-female" class="gender-button gender-female">女</div>
+      <div id="btn-male" class="gender-button gender-male">男</div>
+    </div>
+    <input type="hidden" id="gender" />
+    <div id="error-gender" class="error-msg">請選擇性別</div>
+
 
     <label for="bed">床號</label>
-    <input id="bed" placeholder="床號" required />
+    <select id="bed"></select>
+    <div id="error-bed" class="error-msg">請選擇床號</div>
+
 
     <label for="diagnosis">診斷</label>
-    <input id="diagnosis" placeholder="診斷" required />
+    <select id="diagnosis">
+      <option value="">請選擇</option>
+      <option value="肺炎">肺炎</option>
+      <option value="敗血症">敗血症</option>
+      <option value="腦出血">腦出血</option>
+      <option value="其他">其他</option>
+    </select>
+    <input id="diagnosis_manual" style="display:none;" placeholder="或輸入其他診斷" />
+    <div id="error-diagnosis" class="error-msg">請輸入診斷</div>
+
 
     <label for="doctor">主治醫師</label>
-    <input id="doctor" placeholder="主治醫師" required />
+    <input id="doctor" readonly />
 
     <label for="admit">入院時間</label>
-    <input id="admit" type="datetime-local" required />
+    <input id="admit" type="datetime-local" />
 
     <label for="discharge">出院時間</label>
-    <input id="discharge" type="datetime-local" required />
+    <input id="discharge" type="datetime-local" />
+    <div id="error-discharge" class="error-msg">出院時間錯誤</div>
+
 
     <label for="apache">APACHE II Score</label>
-    <input id="apache" type="number" placeholder="APACHE II Score" required />
+    <input id="apache" type="number" min="0" max="71" />
+    <div id="error-apache" class="error-msg">APACHE II 必須在 0~71</div>
 
     <button id="submitBtn">送出</button>
   </div>
 
+
+  <div id="confirmModal">
+    <div id="confirmModalContent">
+      <h3>請確認資料</h3>
+      <div id="patientPreview"></div>
+      <input id="confirmDoctor" type="password" placeholder="請再次輸入醫師代號" />
+      <div id="confirmError" class="error-msg">醫師代號錯誤</div>
+      <button onclick="closeModal()">取消</button>
+      <button onclick="confirmSubmission()">確定送出</button>
+    </div>
+  </div>
+
+  
   <footer>ICU Management System - © Sha Huang</footer>
 
   <script>
-    // 顯示醫師名稱
-    document.getElementById("doc").innerText = sessionStorage.getItem("name") || "未登入";
+  const doctorId = sessionStorage.getItem("username");
+  document.getElementById("doc").innerText = sessionStorage.getItem("name") || "未登入";
+  document.getElementById("doctor").value = doctorId;
+  const now = new Date().toISOString().slice(0,16);
+  document.getElementById("admit").value = now;
+  document.getElementById("discharge").value = now;
 
-    // 實時更新時間
-    function updateTime() {
-      const now = new Date();
-      document.getElementById("now").textContent = now.toLocaleString('zh-Hant-TW', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
-    }
-    updateTime();
-    setInterval(updateTime, 1000);
+  const bedOptions = [101,102,103,104,105];
+  const bedSelect = document.getElementById("bed");
+  bedOptions.forEach(b => {
+    const opt = document.createElement("option");
+    opt.value = b;
+    opt.textContent = b;
+    bedSelect.appendChild(opt);
+  });
 
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = "login.html";
-    }
+  document.getElementById("diagnosis").addEventListener("change", e => {
+    document.getElementById("diagnosis_manual").style.display = e.target.value === "其他" ? "block" : "none";
+  });
 
-    // ⬇️ 送出病患資料邏輯
-    document.getElementById("submitBtn").addEventListener("click", async () => {
-      const start = performance.now(); // ✅ 加入開始時間
-      
-      const payload = {
-        patient_id: document.getElementById("record").value,
-        name: document.getElementById("name").value,
-        age: parseInt(document.getElementById("age").value),
-        gender: document.getElementById("gender").value,
-        bed_id: parseInt(document.getElementById("bed").value),
-        diagnosis: document.getElementById("diagnosis").value,
-        attending_doctor_id: sessionStorage.getItem("username"),
-        admission_date: new Date(document.getElementById("admit").value),
-        discharge_date: new Date(document.getElementById("discharge").value),
-        apache_score: parseInt(document.getElementById("apache").value)
-      };
+  document.getElementById("btn-female").addEventListener("click", () => {
+    document.getElementById("gender").value = "Female";
+    document.getElementById("btn-female").classList.add("selected");
+    document.getElementById("btn-male").classList.remove("selected");
+  });
+  document.getElementById("btn-male").addEventListener("click", () => {
+    document.getElementById("gender").value = "Male";
+    document.getElementById("btn-male").classList.add("selected");
+    document.getElementById("btn-female").classList.remove("selected");
+  });
 
-      try {
-        const res = await fetch("https://icu-api-56bh.onrender.com/api/patients", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-      const end = performance.now(); // 🕒 結束時間
-      const duration = Math.round(end - start); // 🧮 計算執行時間（毫秒）
-        
-        const result = await res.json();
-        console.log("✅ API 回傳結果：", result);
-
-        if (res.ok) {
-          alert(`✅ 病患資料已成功新增！\n處理時間：${duration} 毫秒`);
-          window.location.href = "dashboard.html";
-        } else {
-          alert("❌ 新增失敗：" + (result.message || "未知錯誤"));
-        }
-      } catch (err) {
-        console.error("❌ 發送失敗", err);
-        alert("⚠ 無法連線至伺服器，請稍後再試");
-      }
+  // 實時更新時間
+  function updateTime() {
+    const now = new Date();
+    document.getElementById("now").textContent = now.toLocaleString('zh-Hant-TW', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
     });
-  </script>
+  }
+  updateTime();
+  setInterval(updateTime, 1000);
+
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = "login.html";
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("error");
+    const err = document.getElementById("error-" + id);
+    if (err) {
+      err.textContent = msg;
+      err.style.display = "block";
+    }
+  }
+  function clearErrors() {
+    document.querySelectorAll(".error").forEach(e => e.classList.remove("error"));
+    document.querySelectorAll(".error-msg").forEach(e => e.style.display = "none");
+  }
+
+  let formData = {};
+  document.getElementById("submitBtn").addEventListener("click", async () => {
+    clearErrors();
+    const start = performance.now();
+
+    formData = {
+      patient_id: document.getElementById("record").value.trim(),
+      name: document.getElementById("name").value.trim(),
+      age: parseInt(document.getElementById("age").value),
+      gender: document.getElementById("gender").value,
+      bed_id: parseInt(document.getElementById("bed").value),
+      diagnosis: document.getElementById("diagnosis").value === "其他"
+                  ? document.getElementById("diagnosis_manual").value.trim()
+                  : document.getElementById("diagnosis").value,
+      admission_date: new Date(document.getElementById("admit").value),
+      discharge_date: new Date(document.getElementById("discharge").value),
+      apache_score: parseInt(document.getElementById("apache").value),
+      attending_doctor_id: doctorId
+    };
+
+    let valid = true;
+    if (!formData.name) { showError("name", "請輸入姓名"); valid = false; }
+    if (!/^\d{8}$/.test(formData.patient_id)) { showError("record", "病歷號需為 8 碼數字"); valid = false; }
+    if (isNaN(formData.age) || formData.age < 0 || formData.age > 130) { showError("age", "年齡需在 0~130"); valid = false; }
+    if (!formData.gender) { showError("gender", "請選擇性別"); valid = false; }
+    if (isNaN(formData.bed_id)) { showError("bed", "請選擇床號"); valid = false; }
+    if (!formData.diagnosis) { showError("diagnosis", "請輸入診斷"); valid = false; }
+    if (formData.discharge_date < formData.admission_date || formData.discharge_date > new Date()) {
+      showError("discharge", "出院時間不合理"); valid = false;
+    }
+    if (isNaN(formData.apache_score) || formData.apache_score < 0 || formData.apache_score > 71) {
+      showError("apache", "APACHE II 必須在 0~71"); valid = false; }
+    if (!formData.attending_doctor_id) { showError("doctor", "主治醫師錯誤"); valid = false; }
+
+    const check = await fetch(`https://icu-api-56bh.onrender.com/api/patients/${formData.patient_id}`);
+    if (check.ok) { showError("record", "病歷號已存在"); valid = false; }
+
+    if (!valid) return;
+
+    const preview = `姓名：${formData.name}<br>病歷號：${formData.patient_id}<br>年齡：${formData.age}<br>性別：${formData.gender}<br>床號：${formData.bed_id}<br>診斷：${formData.diagnosis}<br>入院：${formData.admission_date.toLocaleString()}<br>出院：${formData.discharge_date.toLocaleString()}<br>APACHE II：${formData.apache_score}`;
+    document.getElementById("patientPreview").innerHTML = preview;
+    document.getElementById("confirmDoctor").value = "";
+    document.getElementById("confirmError").style.display = "none";
+    document.getElementById("confirmModal").style.display = "flex";
+  });
+
+  function closeModal() {
+    document.getElementById("confirmModal").style.display = "none";
+  }
+
+  function confirmSubmission() {
+    const inputId = document.getElementById("confirmDoctor").value.trim();
+    if (inputId !== doctorId) {
+      document.getElementById("confirmError").style.display = "block";
+      return;
+    }
+    fetch("https://icu-api-56bh.onrender.com/api/patients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData)
+    })
+      .then(res => res.json())
+      .then(() => {
+        const end = performance.now();
+        const duration = Math.round(end - start);
+        alert(`✅ 病患資料已成功新增！\n處理時間：${duration} 毫秒`);
+        window.location.href = "dashboard.html";
+      })
+      .catch(err => alert("❌ 發送失敗，請稍後再試"));
+  }
+</script>
+
+  
 </body>
 </html>
