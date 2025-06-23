@@ -1,106 +1,157 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <link rel="stylesheet" href="style.css">
-  <meta charset="UTF-8" />
-  <title>ICU 病患查詢</title>
-  <footer>ICU Management System - © Sha Huang</footer>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="title">ICU 病患查詢</title>
   <style>
-    body { font-family: sans-serif; padding: 0; margin: 0; }
-    header { display: flex; justify-content: space-between; align-items: center; background: #f0f0f0; padding: 1em; }
-    table { margin: 2em auto; border-collapse: collapse; width: 95%; }
-    th, td { border: 1px solid #ccc; padding: 0.5em; }
-    canvas { display: block; margin: 2em auto; }
-    footer { margin-top: 2em; font-size: 0.8em; text-align: center; color: gray; }
-    button.menu { margin-left: 1em; }
+    body { font-family: "Noto Sans TC", sans-serif; margin: 0; background: #f7f8fa; color: #333; }
+    header { display: flex; justify-content: space-between; align-items: center; background: #e9ecef; padding: 1em 2em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .menu { margin-left: 1em; padding: 0.5em 1em; background-color: #5b9bd5; border: none; color: white; border-radius: 4px; cursor: pointer; }
+    .menu:hover { background-color: #4a89c2; }
+    .lang-select { font-size: 1.2em; margin-left: 1em; cursor: pointer; user-select: none; }
+    .lang-menu { position: absolute; top: 55px; right: 20px; background: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: none; z-index: 100; }
+    .lang-menu div { padding: 0.6em 1em; cursor: pointer; }
+    .lang-menu div:hover { background-color: #f0f0f0; }
+    #filterBar { text-align: center; margin-top: 1em; }
+    #searchBar, #filterGender, #filterDiagnosis, #filterApache { display: inline-block; margin: 0.5em; padding: 0.8em; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; }
+    table { margin: 1em auto; border-collapse: collapse; width: 95%; animation: fadeIn 0.8s ease-out; }
+    th, td { border: 1px solid #ddd; padding: 0.75em; text-align: center; transition: background-color 0.3s; }
+    th { cursor: pointer; background-color: #f1f3f5; }
+    tr:hover { background-color: #f9f9f9; }
+    footer { text-align: center; padding: 1em; font-size: 0.8em; color: gray; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
   <header>
-    <div><strong>ICU 系統</strong> | <span id="now"></span></div>
+    <div><strong id="icuTitle">ICU 系統</strong> | <span id="now"></span></div>
     <div>
-      醫師：<span id="doctor"></span>
-      <button class="menu" onclick="window.location.href='form.html'">新增資料</button>
-      <button class="menu" onclick="logout()">登出</button>
+      <span class="lang-select" onclick="toggleLangMenu()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>
+        </svg>
+      </span>
+      <div class="lang-menu" id="langMenu">
+        <div onclick="setLang('zh')">繁體中文</div>
+        <div onclick="setLang('en')">English</div>
+      </div>
+      <span id="labelDoctor">醫師：</span><span id="doctor"></span>
+      <button class="menu" id="btnAdd" onclick="window.location.href='form.html'">新增資料</button>
+      <button class="menu" id="btnExport" onclick="exportTableToCSV()">匯出 CSV</button>
+      <button class="menu" id="btnLogout" onclick="logout()">登出</button>
     </div>
   </header>
+
+  <div id="filterBar">
+    <input type="text" id="searchBar" placeholder="🔍 搜尋病患...">
+    <select id="filterGender">
+      <option value="">全部性別</option>
+      <option value="Male">男</option>
+      <option value="Female">女</option>
+    </select>
+    <select id="filterDiagnosis">
+      <option value="">全部診斷</option>
+      <option value="hepatoma">肝癌</option>
+      <option value="pneumonia">肺炎</option>
+      <option value="sepsis">敗血症</option>
+      <option value="stroke">中風</option>
+    </select>
+    <select id="filterApache">
+      <option value="">全部 APACHE</option>
+      <option value="0-10">0-10</option>
+      <option value="11-20">11-20</option>
+      <option value="21-30">21-30</option>
+      <option value="31+">31 以上</option>
+    </select>
+  </div>
+
   <table id="patientTable">
     <thead>
-      <tr><th>姓名</th><th>病歷號</th><th>年齡</th><th>性別</th><th>床號</th><th>診斷</th><th>APACHE II</th><th>住院天數</th></tr>
+      <tr>
+        <th id="colName" onclick="sortTable(0)">姓名</th>
+        <th id="colId" onclick="sortTable(1)">病歷號</th>
+        <th id="colAge" onclick="sortTable(2)">年齡</th>
+        <th id="colGender" onclick="sortTable(3)">性別</th>
+        <th id="colBed" onclick="sortTable(4)">床號</th>
+        <th id="colDiagnosis" onclick="sortTable(5)">診斷</th>
+        <th id="colApache" onclick="sortTable(6)">APACHE II</th>
+        <th id="colStay" onclick="sortTable(7)">住院天數</th>
+        <th id="colEdit">操作</th>
+      </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="patientBody"></tbody>
   </table>
-  <canvas id="chart" width="600" height="200"></canvas>
-  <footer>ICU Management System - All Rights Reserved</footer>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <footer id="footerText">ICU Management System - © Sha Huang 2025</footer>
+
   <script>
-    const username = sessionStorage.getItem("username"); // 例如 D001 → 拿來比對病患
-    const doctorName = sessionStorage.getItem("name");  // 例如 黃醫師 → 顯示在畫面右上角
-
-    // ✅ 加入這些 log 觀察 sessionStorage 是否正確
-    console.log("🚀 Dashboard 載入中...");
-    console.log("🧾 登入帳號 username =", username);
-    console.log("🧾 醫師中文名 doctorName =", doctorName);
-
-    // 如果未登入，轉回 login 頁面
-    if (!username) window.location.href = "login.html";
-
-    // ✅ 顯示醫師姓名
-    document.getElementById("doctor").innerText = doctorName || "未登入";
-    document.getElementById("now").innerText = new Date().toLocaleString();
-
-    // ✅ 顯示目前時間（每秒更新）
-    function updateTime() {
-     const now = new Date();
-     document.getElementById("now").textContent = now.toLocaleString('zh-Hant-TW', {
-       year: 'numeric', month: '2-digit', day: '2-digit',
-       hour: '2-digit', minute: '2-digit', second: '2-digit'
-     });
+    function toggleLangMenu() {
+      const menu = document.getElementById("langMenu");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
     }
-    updateTime();
-    setInterval(updateTime, 1000);
 
+    function setLang(lang) {
+      const textMap = {
+        zh: { title: "ICU 病患查詢", icuTitle: "ICU 系統", labelDoctor: "醫師：", btnAdd: "新增資料", btnExport: "匯出 CSV", btnLogout: "登出", footerText: "ICU Management System - © Sha Huang 2025", colName: "姓名", colId: "病歷號", colAge: "年齡", colGender: "性別", colBed: "床號", colDiagnosis: "診斷", colApache: "APACHE II", colStay: "住院天數", colEdit: "操作", btnEdit: "編輯" },
+        en: { title: "ICU Patient Lookup", icuTitle: "ICU System", labelDoctor: "Doctor:", btnAdd: "Add Record", btnExport: "Export CSV", btnLogout: "Logout", footerText: "ICU Management System - © Sha Huang 2025", colName: "Name", colId: "Patient ID", colAge: "Age", colGender: "Gender", colBed: "Bed #", colDiagnosis: "Diagnosis", colApache: "APACHE II", colStay: "Days in ICU", colEdit: "Action", btnEdit: "Edit" }
+      };
+      const content = textMap[lang];
+      document.title = content.title;
+      document.getElementById("title").textContent = content.title;
+      document.getElementById("icuTitle").textContent = content.icuTitle;
+      document.getElementById("labelDoctor").textContent = content.labelDoctor;
+      document.getElementById("btnAdd").textContent = content.btnAdd;
+      document.getElementById("btnExport").textContent = content.btnExport;
+      document.getElementById("btnLogout").textContent = content.btnLogout;
+      document.getElementById("footerText").textContent = content.footerText;
+      document.getElementById("colName").textContent = content.colName;
+      document.getElementById("colId").textContent = content.colId;
+      document.getElementById("colAge").textContent = content.colAge;
+      document.getElementById("colGender").textContent = content.colGender;
+      document.getElementById("colBed").textContent = content.colBed;
+      document.getElementById("colDiagnosis").textContent = content.colDiagnosis;
+      document.getElementById("colApache").textContent = content.colApache;
+      document.getElementById("colStay").textContent = content.colStay;
+      document.getElementById("colEdit").textContent = content.colEdit;
+      document.querySelectorAll('.btn-edit').forEach(btn => btn.textContent = content.btnEdit);
+      document.getElementById("langMenu").style.display = "none";
+    }
 
-    fetch("https://icu-api-56bh.onrender.com/api/patients")
-      .then(res => res.json())
-      .then(data => {
+    function renderPatientRow(patient) {
+      const admit = new Date(patient.admission_date);
+      const discharge = new Date(patient.discharge_date);
+      const stayDays = Math.ceil((discharge - admit) / (1000 * 60 * 60 * 24));
+      return `
+        <tr>
+          <td>${patient.name}</td>
+          <td>${patient.patient_id}</td>
+          <td>${patient.age}</td>
+          <td>${patient.gender}</td>
+          <td>${patient.bed_id}</td>
+          <td>${patient.diagnosis}</td>
+          <td>${patient.apache_score}</td>
+          <td>${stayDays} 天</td>
+          <td><button class="btn-edit" onclick="editPatient('${patient.patient_id}')">編輯</button></td>
+        </tr>`;
+    }
 
-        console.log("📦 病患資料筆數：", data.length);
-        console.log("📋 病患資料內容：", data);
+    function editPatient(id) {
+      window.location.href = `form.html?edit=${id}`;
+    }
 
-        const body = document.querySelector("#patientTable tbody");
-        let labels = [], scores = [];
-
-        // ✅ 比對病患資料中的 attending_doctor_id 是否等於登入的帳號
-        data.forEach(p => {
-	  console.log("👁 正在比對：病患所屬醫師 =", p.attending_doctor_id, "登入帳號 =", username);
-
-          if (p.attending_doctor_id === username){
-	    // ✅ 計算住院天數
-	    const admit = new Date(p.admission_date);
-	    const discharge = new Date(p.discharge_date);
-	    const stayDays = Math.ceil((discharge - admit) / (1000 * 60 * 60 * 24)); // 單位：天
-		  
-            body.innerHTML += `<tr><td>${p.name}</td><td>${p.patient_id}</td><td>${p.age}</td><td>${p.gender}</td><td>${p.bed_id}</td><td>${p.diagnosis}</td><td>${p.apache_score}</td><td>${stayDays} 天</td></tr>`;
-            labels.push(p.name);
-            scores.push(p.apache_score);
-          }
-        });
-
-	// ✅ 若無資料，也顯示提示文字
-	if (labels.length === 0) {
-		body.innerHTML = `<tr><td colspan="7" style="text-align:center;">尚無您負責的病患資料</td></tr>`;
-	}
-      })
-
-        
-	.catch(err => {
-		console.error("❌ 無法取得病患資料", err);
-	document.querySelector("#patientTable tbody").innerHTML =
-        	`<tr><td colspan="7" style="text-align:center;color:red;">⚠ 無法取得病患資料</td></tr>`;
-
-	});
+    function exportTableToCSV() {
+      const rows = document.querySelectorAll("table tr");
+      const csv = [...rows].map(row => [...row.children].map(cell => '"' + cell.innerText + '"').join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "patients.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
     function logout() {
       sessionStorage.clear();
