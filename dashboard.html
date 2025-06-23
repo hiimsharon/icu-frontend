@@ -84,6 +84,10 @@
     <tbody id="patientBody"></tbody>
   </table>
 
+  <div style="width: 90%; margin: 2em auto;">
+    <canvas id="patientChart" height="100"></canvas>
+  </div>
+
   <footer id="footerText">ICU Management System - © Sha Huang 2025</footer>
 
   <script>
@@ -98,6 +102,23 @@
         en: { title: "ICU Patient Lookup", icuTitle: "ICU System", labelDoctor: "Doctor:", btnAdd: "Add Record", btnExport: "Export CSV", btnLogout: "Logout", footerText: "ICU Management System - © Sha Huang 2025", colName: "Name", colId: "Patient ID", colAge: "Age", colGender: "Gender", colBed: "Bed #", colDiagnosis: "Diagnosis", colApache: "APACHE II", colStay: "Days in ICU", colEdit: "Action", btnEdit: "Edit" }
       };
       const content = textMap[lang];
+
+      // 下拉選單語系切換
+      document.querySelector("#filterGender").options[0].text = lang === 'en' ? 'All Genders' : '全部性別';
+      document.querySelector("#filterGender").options[1].text = lang === 'en' ? 'Male' : '男';
+      document.querySelector("#filterGender").options[2].text = lang === 'en' ? 'Female' : '女';
+
+      document.querySelector("#filterDiagnosis").options[0].text = lang === 'en' ? 'All Diagnoses' : '全部診斷';
+      document.querySelector("#filterDiagnosis").options[1].text = lang === 'en' ? 'Hepatoma' : '肝癌';
+      document.querySelector("#filterDiagnosis").options[2].text = lang === 'en' ? 'Pneumonia' : '肺炎';
+      document.querySelector("#filterDiagnosis").options[3].text = lang === 'en' ? 'Sepsis' : '敗血症';
+      document.querySelector("#filterDiagnosis").options[4].text = lang === 'en' ? 'Stroke' : '中風';
+
+      document.querySelector("#filterApache").options[0].text = lang === 'en' ? 'All APACHE' : '全部 APACHE';
+      document.querySelector("#filterApache").options[1].text = '0-10';
+      document.querySelector("#filterApache").options[2].text = '11-20';
+      document.querySelector("#filterApache").options[3].text = '21-30';
+      document.querySelector("#filterApache").options[4].text = lang === 'en' ? '31 and above' : '31 以上';
       document.title = content.title;
       document.getElementById("title").textContent = content.title;
       document.getElementById("icuTitle").textContent = content.icuTitle;
@@ -106,6 +127,10 @@
       document.getElementById("btnExport").textContent = content.btnExport;
       document.getElementById("btnLogout").textContent = content.btnLogout;
       document.getElementById("footerText").textContent = content.footerText;
+      const searchBar = document.getElementById("searchBar");
+      if (searchBar) {
+        searchBar.placeholder = lang === 'en' ? '🔍 Search patients...' : '🔍 搜尋病患...';
+      }
       document.getElementById("colName").textContent = content.colName;
       document.getElementById("colId").textContent = content.colId;
       document.getElementById("colAge").textContent = content.colAge;
@@ -158,5 +183,43 @@
       window.location.href = "login.html";
     }
   </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const ctx = document.getElementById("patientChart").getContext("2d");
+    const labels = ["0-10", "11-20", "21-30", "31+"];
+    const counts = [5, 8, 3, 4]; // Replace with dynamic counts if needed
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "APACHE II 分數區間人數",
+          data: counts,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: "病患 APACHE II 分數分佈"
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "人數" }
+          },
+          x: {
+            title: { display: true, text: "分數區間" }
+          }
+        }
+      }
+    });
+  });
+</script>
 </body>
 </html>
